@@ -3,7 +3,7 @@
 /******************************************************/
 
 #include "Particle.h"
-#line 1 "d:/Git/APP2-S6-Argon/APP2-S6-Argon/src/APP2-S6-Argon.ino"
+#line 1 "d:/Git/APP2-S6-Argon/BaseStation/src/APP2-S6-Argon.ino"
 /* ======================================================
  * Projet: APP2-S6-Argon
  * Fichier: BaseStation.ino
@@ -14,9 +14,9 @@
 
 void setup();
 void loop();
-#line 9 "d:/Git/APP2-S6-Argon/APP2-S6-Argon/src/APP2-S6-Argon.ino"
+#line 9 "d:/Git/APP2-S6-Argon/BaseStation/src/APP2-S6-Argon.ino"
 TCPClient client;
-IPAddress server(0, 0, 0, 0); // IP du serveur
+IPAddress server(192, 168, 0, 26); // IP du serveur
 int port = 8888; // Port du serveur
 
 void setup() {
@@ -34,9 +34,10 @@ void setup() {
 
 
 void loop() {
-  if (client.available()) {
-    client.write("allo mon p'tit criss");
-  }
+  
+  client.write("allo mon p'tit criss");
+  client.println("whatup whatup");
+  
 
   if (!client.connected()) {
     Serial.println("disconnecting.");

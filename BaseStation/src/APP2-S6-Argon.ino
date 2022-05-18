@@ -7,7 +7,7 @@
  ====================================================== */
 
 TCPClient client;
-IPAddress server(0, 0, 0, 0); // IP du serveur
+IPAddress server(192, 168, 0, 26); // Changer l'IP à l'adresse de ton ordi
 int port = 8888; // Port du serveur
 
 void setup() {
@@ -25,9 +25,9 @@ void setup() {
 
 
 void loop() {
-  if (client.available()) {
-    client.write("allo mon p'tit criss");
-  }
+  
+  client.write("Salut Paul");
+  
 
   if (!client.connected()) {
     Serial.println("disconnecting.");
