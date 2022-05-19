@@ -8,9 +8,13 @@
 
 #include "Peripherals/LightSensor.h"
 #include "Peripherals/DPS310.h"
+#include "Peripherals/WindSensor.h"
+#include "Peripherals/RainSensor.h"
 
 LightSensor lightSensor;
 DPS310 barometer;
+WindSensor windSensor;
+RainSensor rainSensor;
 
 void setup() {
   Serial.begin(9600);
@@ -18,17 +22,27 @@ void setup() {
 
   lightSensor = LightSensor();
   barometer = DPS310();
+  windSensor = WindSensor();
+  rainSensor = RainSensor();
 
   barometer.setup();
+  windSensor.setup();
+  rainSensor.setup();
 }
 
 void loop() {
   int light = lightSensor.read();
   float temperature = barometer.readTemperature();
+  int windDirection = windSensor.readWindDirection();
+  float windSpeed = windSensor.readWindSpeed();
+  float rain = rainSensor.read();
 
   Serial.println("===== New Data =====");
   Serial.println("Light: " + String(light));
   Serial.println("Temperature: " + String(temperature));
+  Serial.println("Wind Direction: " + String(windDirection));
+  Serial.println("Wind Speed: " + String(windSpeed));
+  Serial.println("Rain: " + String(rain));
 
-  delay(1000);
+  delay(500);
 }

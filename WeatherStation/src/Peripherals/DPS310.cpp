@@ -47,6 +47,7 @@ void DPS310::setup() {
         c0 = c0 & 0x000000FF;
     }
 
+    // TODO: Corriger ce bout de code là pour transformer le nombre de 12 bits en 32 bits
     c1 = c0c1 & 0xFFF; // c1 devrait normalement donner un nombre négatif, il va rester à le convertir de la bonne manière   
     if (c1 & (1 << 11)) {
         c1 = c1 & 0xFFFFFFFF;
