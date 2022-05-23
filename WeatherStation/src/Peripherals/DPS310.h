@@ -14,6 +14,7 @@
 #define REGISTER_TMP 0x03
 #define DATA_BYTES_TO_READ 3
 
+#define REGISTER_PRS_CFG 0x06
 #define REGISTER_TMP_CFG 0x07
 #define REGISTER_MEAS_CFG 0x08
 
@@ -24,6 +25,7 @@
 #define BYTES_TO_READ_PSR_1 7
 #define BYTES_TO_READ_PSR_2 8
 
+#define DATA_PRS_CFG 0x00
 #define DATA_TMP_CFG 0X80
 #define DATA_MEAS_CFG 0XF7
 

@@ -21,8 +21,8 @@ void DPS310::setup() {
 
     // Configuration pression
     Wire.beginTransmission(DPS310_ADDRESS);
-    Wire.write(0x06);
-    Wire.write(0x00);
+    Wire.write(REGISTER_PRS_CFG);
+    Wire.write(DATA_PRS_CFG);
     Wire.endTransmission();
 
     // Configuration température

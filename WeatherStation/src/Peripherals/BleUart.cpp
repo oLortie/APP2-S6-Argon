@@ -37,28 +37,29 @@ void BleUart::loop(int light, float temperature, float pressure, float windDirec
 	/**************************************
 	!! Mapping !!
 	Light: 2 bytes (0 à ~2500)
-	Température: 1 bytes + 40 Celcius pour une étendue postive (-40 à 85 Celcius)
+	Température: 2 bytes + 40 Celcius pour une étendue postive * 10 pour les dizièmes (-40 à 85 Celcius)
 	Pression: 3 bytes en Pascal (300 à 1200 hPa)
 	Direction du vent: 2 bytes * 10 pour les dizièmes (0 à 360 Degrés)
-	Force du vent: 2 bytes (0 à ??)
-	Pluie: 2 bytes (0 à ??)
+	Force du vent: 2 bytes (0 à ?? km/h)
+	Pluie: 2 bytes (0 à ?? mm)
 	**************************************/
 
     uint8_t txBuf[UART_TX_BUF_SIZE];
-    size_t txLen = 12;
+    size_t txLen = 13;
 
 	txBuf[0] = int((light >> 8) & 0xFF);
 	txBuf[1] = int(light & 0xFF);
-	txBuf[2] = int(temperature + 40);
-	txBuf[3] = (int(pressure) >> 16) & 0xFF;
-	txBuf[4] = (int(pressure) >> 8) & 0xFF;
-	txBuf[5] = int(pressure) & 0xFF;
-	txBuf[6] = (int(windDirection*10) >> 8) & 0xFF;
-	txBuf[7] = int(windDirection*10) & 0xFF;
-	txBuf[8] = (int(windSpeed) >> 8) & 0xFF;
-	txBuf[9] = int(windSpeed) & 0xFF;
-	txBuf[10] = (int(rain) >> 8) & 0xFF;
-	txBuf[11] = int(rain) & 0xFF;
+	txBuf[2] = (int((temperature + 40)*10) >> 8) & 0xFF;
+	txBuf[3] = int((temperature + 40)*10) & 0xFF;
+	txBuf[4] = (int(pressure) >> 16) & 0xFF;
+	txBuf[5] = (int(pressure) >> 8) & 0xFF;
+	txBuf[6] = int(pressure) & 0xFF;
+	txBuf[7] = (int(windDirection*10) >> 8) & 0xFF;
+	txBuf[8] = int(windDirection*10) & 0xFF;
+	txBuf[9] = (int(windSpeed) >> 8) & 0xFF;
+	txBuf[10] = int(windSpeed) & 0xFF;
+	txBuf[11] = (int(rain) >> 8) & 0xFF;
+	txBuf[12] = int(rain) & 0xFF;
 
-	txCharacteristic.setValue(txBuf,txLen);
+	txCharacteristic.setValue(txBuf, txLen);
 }

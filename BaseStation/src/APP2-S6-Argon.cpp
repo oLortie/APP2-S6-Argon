@@ -18,7 +18,7 @@ void setup();
 void loop();
 #line 10 "c:/Users/Utilisateur/Documents/Particle_argon/S6_APP2/APP2-S6-Argon/BaseStation/src/APP2-S6-Argon.ino"
 const BleUuid serviceUuid("de716eda-7a41-4c7d-b5a3-4d3d192fe7cd");
-const BleUuid txUuid("de716eda-7a41-4c7d-b5a3-4d3d192fe7cd");
+const BleUuid rxUuid("de716eda-7a41-4c7d-b5a3-4d3d192fe7cd");
 
 const size_t SCAN_RESULT_COUNT = 20;
 
@@ -26,37 +26,10 @@ const unsigned long SCAN_PERIOD_MS = 2000;
 
 BleScanResult scanResults[SCAN_RESULT_COUNT];
 
-BleCharacteristic peerTxCharacteristic;
+BleCharacteristic peerRxCharacteristic;
 BlePeerDevice peer;
 
 unsigned long lastScan = 0;
-
-void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) {
-  /**************************************
-	!! Mapping !!
-	Light: 2 bytes (0 à ~2500)
-	Température: 1 bytes + 40 Celcius pour une étendue postive (-40 à 85 Celcius)
-	Pression: 3 bytes en Pascal (300 à 1200 hPa)
-	Direction du vent: 2 bytes * 10 pour les dizièmes (0 à 360 Degrés)
-	Force du vent: 2 bytes (0 à ??)
-	Pluie: 2 bytes (0 à ??)
-	**************************************/
-
-  int light = (data[0] << 8) | data[1];
-  float temperature = data[2] - 40;
-  float pressure = ((data[3] << 16) | (data[4] << 8)) | data[5];
-  float windDirection = ((data[6] << 8) | data[7])/10;
-  float windSpeed = (data[8] << 8) | data[9];
-  float rain = (data[10] << 8) | data[11];
-
-  Serial.println("========= New Data =========");
-  Serial.println("Light: " + String(light));
-  Serial.println("Temperature: " + String(temperature));
-  Serial.println("Pressure: " + String(pressure));
-  Serial.println("Wind Direction: " + String(windDirection));
-  Serial.println("Wind Speed: " + String(windSpeed));
-  Serial.println("Rain: " + String(rain));
-}
 
 // TCP
 TCPClient client;
@@ -65,21 +38,53 @@ IPAddress serverPaul(10, 0, 0, 141);
 IPAddress server = serverPaul;
 int port = 8888; // Port du serveur
 
+void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) {
+  /**************************************
+	!! Mapping !!
+	Light: 2 bytes (0 à ~2500)
+	Température: 2 bytes + 40 Celcius pour une étendue postive * 10 pour les dizièmes (-40 à 85 Celcius)
+	Pression: 3 bytes en Pascal (300 à 1200 hPa)
+	Direction du vent: 2 bytes * 10 pour les dizièmes (0 à 360 Degrés)
+	Force du vent: 2 bytes (0 à ??)
+	Pluie: 2 bytes (0 à ??)
+	**************************************/
+
+  /*int light = (data[0] << 8) | data[1];
+  float temperature = float(((data[2] << 8) | data[3]))/10 - 40;
+  float pressure = ((data[4] << 16) | (data[5] << 8)) | data[6];
+  float windDirection = float(((data[7] << 8) | data[8]))/10;
+  float windSpeed = (data[9] << 8) | data[10];
+  float rain = (data[11] << 8) | data[12];
+
+  Serial.println("========= New Data =========");
+  Serial.println("Light: " + String(light));
+  Serial.println("Temperature: " + String(temperature));
+  Serial.println("Pressure: " + String(pressure));
+  Serial.println("Wind Direction: " + String(windDirection));
+  Serial.println("Wind Speed: " + String(windSpeed));
+  Serial.println("Rain: " + String(rain));*/
+
+  if(client.connected()) {
+    client.write(data, len);
+  }
+}
+
 void setup() {
   Serial.begin(9600);
   waitFor(Serial.isConnected, 30000);
 
   // Bluetooth/UART Central
   BLE.on();
-  peerTxCharacteristic.onDataReceived(onDataReceived, &peerTxCharacteristic);
+  peerRxCharacteristic.onDataReceived(onDataReceived, &peerRxCharacteristic);
 
   // TCP
-  /*if (client.connect(server, port)) {
-    Serial.println("connected");
+  while(true) {
+    if (client.connect(server, port)) {
+      Serial.println("connected");
+      break;
+    }
+    Serial.println("waiting to connect");
   }
-  else {
-    Serial.println("connection failed");
-  }*/
 }
 
 void loop() {
@@ -100,7 +105,7 @@ void loop() {
           if (svcCount > 0 && foundServiceUuid == serviceUuid) {
             peer = BLE.connect(scanResults[ii].address());
             if (peer.connected()) {
-              peer.getCharacteristicByUUID(peerTxCharacteristic, txUuid);
+              peer.getCharacteristicByUUID(peerRxCharacteristic, rxUuid);
             }
             break;
           }
@@ -110,12 +115,7 @@ void loop() {
   }
 
   // TCP
-  /*client.write("Salut Olivier");
-
-  if (!client.connected()) {
-    Serial.println("disconnecting.");
-    client.stop();
-  }*/
-
-  //delay(500);
+  if(client.getWriteError()) {
+    Serial.println("server error, restart server and then Base Station device");
+  }
 }
