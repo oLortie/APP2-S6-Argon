@@ -19,6 +19,18 @@ DPS310::~DPS310() {
 void DPS310::setup() {
     Wire.begin();
 
+    // Configuration pression
+    Wire.beginTransmission(DPS310_ADDRESS);
+    Wire.write(0x06);
+    Wire.write(0x00);
+    Wire.endTransmission();
+
+    // Configuration température
+    Wire.beginTransmission(DPS310_ADDRESS);
+    Wire.write(REGISTER_TMP_CFG);
+    Wire.write(DATA_TMP_CFG);
+    Wire.endTransmission();
+
     // Mettre en mode continuous
     Wire.beginTransmission(DPS310_ADDRESS);
     Wire.write(REGISTER_MEAS_CFG);
@@ -26,68 +38,91 @@ void DPS310::setup() {
     Wire.endTransmission();
 
     // Lire les coefficients de calibration
-    Wire.beginTransmission(DPS310_ADDRESS);
-    Wire.write(REGISTER_COEF);
-    Wire.endTransmission(false);
+    u_int64_t tmp_coeff = 0;
+    u_int64_t psr_coeff_1 = 0;
+    u_int64_t psr_coeff_2 = 0;
 
-    Wire.requestFrom(DPS310_ADDRESS, BYTES_TO_READ);
+    readRegister(tmp_coeff, REGISTER_COEF_TMP, BYTES_TO_READ_TMP);
+    readRegister(psr_coeff_1, REGISTER_COEF_PSR_1, BYTES_TO_READ_PSR_1);
+    readRegister(psr_coeff_2, REGISTER_COEF_PSR_2, BYTES_TO_READ_PSR_2);
 
-    u_int32_t c0c1 = 0;
+    c0 = tmp_coeff >> 12 & 0xFFF;
+    c1 = tmp_coeff & 0xFFF;
+    c00 = psr_coeff_1 >> 36 & 0xFFFFF;
+    c10 = psr_coeff_1 >> 16 & 0xFFFFF;
+    c01 = psr_coeff_1 & 0xFFFF;
+    c11 = psr_coeff_2 >> 48 & 0xFFFF;
+    c20 = psr_coeff_2 >> 32 & 0xFFFF;
+    c21 = psr_coeff_2 >> 16 & 0xFFFF;
+    c30 = psr_coeff_2 & 0xFFFF;
 
-    while(Wire.available()){
-        char c = Wire.read();
-        c0c1 = (c0c1 << 8) | c;
-    }
-
-    c0 = c0c1 >> 12 & 0xFFF;
-    if (c0 & (1 << 11)) {
-        c0 = c0 & 0xFFFFFFFF;
-    }
-    else {
-        c0 = c0 & 0x000000FF;
-    }
-
-    // TODO: Corriger ce bout de code là pour transformer le nombre de 12 bits en 32 bits
-    c1 = c0c1 & 0xFFF; // c1 devrait normalement donner un nombre négatif, il va rester à le convertir de la bonne manière   
-    if (c1 & (1 << 11)) {
-        c1 = c1 & 0xFFFFFFFF;
-    }
-    else {
-        c1 = c1 & 0x00000FFF;
-    }
-
-    Serial.println("START");
-    Serial.println("c0c1: " + String(c0c1));
-    Serial.println("c0: " + String(c0));
-    Serial.println("c1: " + String(c1));
+    complementTwoToBinary(c0, 12);
+    complementTwoToBinary(c1, 12);
+    complementTwoToBinary(c00, 20);
+    complementTwoToBinary(c10, 20);
+    complementTwoToBinary(c01, 16);
+    complementTwoToBinary(c11, 16);
+    complementTwoToBinary(c20, 16);
+    complementTwoToBinary(c21, 16);
+    complementTwoToBinary(c30, 16);
 }
 
 float DPS310::readTemperature() {
-    Wire.beginTransmission(DPS310_ADDRESS);
-    Wire.write(REGISTER_TMP);
-    Wire.endTransmission(false); // Restart
-    
-    Wire.requestFrom(DPS310_ADDRESS, BYTES_TO_READ);
+    int tmp = 0;
 
-    u_int32_t tmp = 0;
-    float tmpCelsius = 0;
+    readRegister(tmp, REGISTER_TMP, DATA_BYTES_TO_READ);
 
-    while(Wire.available()){
-        char c = Wire.read();
-        tmp = (tmp << 8) | c;
-    }
+    complementTwoToBinary(tmp, 24);
 
-    //Serial.println("tmp: " + String(tmp));
-
-    tmpCelsius = c0*0.5 + c1*tmp/KT;
-
-    //Serial.println(tmpCelsius);
-
-    Wire.endTransmission();
-
-    return tmpCelsius;
+    return float(c0)*0.5 + float(c1)*float(tmp)/KT;
 }
 
 float DPS310::readPressure() {
-    return 0.0;
+    int tmp = 0;
+    int psr = 0;
+
+    readRegister(tmp, REGISTER_TMP, DATA_BYTES_TO_READ);
+    readRegister(psr, REGISTER_PSR, DATA_BYTES_TO_READ);
+
+    complementTwoToBinary(tmp, 24);
+    complementTwoToBinary(psr, 24);
+
+    return float(c00) + float(psr)/KP*(float(c10) + float(psr)/KP*(float(c20) + float(psr)/KP*float(c30))) +
+           float(tmp)/KT*float(c01) + float(tmp)/KT*float(psr)/KP*(float(c11) + float(psr)/KP*float(c21));
+}
+
+void DPS310::readRegister(uint64_t &data, int registerData, int nbBytes) {
+    Wire.beginTransmission(DPS310_ADDRESS);
+    Wire.write(registerData);
+    Wire.endTransmission(false);
+
+    Wire.requestFrom(DPS310_ADDRESS, nbBytes);
+
+    while(Wire.available()){
+        char c = Wire.read();
+        data = (data << 8) | c;
+    }
+
+    Wire.endTransmission();
+}
+
+void DPS310::readRegister(int &data, int registerData, int nbBytes) {
+    Wire.beginTransmission(DPS310_ADDRESS);
+    Wire.write(registerData);
+    Wire.endTransmission(false);
+
+    Wire.requestFrom(DPS310_ADDRESS, nbBytes);
+
+    while(Wire.available()){
+        char c = Wire.read();
+        data = (data << 8) | c;
+    }
+
+    Wire.endTransmission();
+}
+
+void DPS310::complementTwoToBinary(int &cx, int nbBits) {
+    if((cx >> (nbBits - 1)) & 0x1) {
+        cx = cx - (1 << nbBits); //pow(2, nbBits)
+    }
 }

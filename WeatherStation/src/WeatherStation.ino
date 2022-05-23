@@ -10,11 +10,13 @@
 #include "Peripherals/DPS310.h"
 #include "Peripherals/WindSensor.h"
 #include "Peripherals/RainSensor.h"
+#include "Peripherals/BleUart.h"
 
 LightSensor lightSensor;
 DPS310 barometer;
 WindSensor windSensor;
 RainSensor rainSensor;
+BleUart bleUart;
 
 void setup() {
   Serial.begin(9600);
@@ -24,25 +26,31 @@ void setup() {
   barometer = DPS310();
   windSensor = WindSensor();
   rainSensor = RainSensor();
+  bleUart = BleUart();
 
   barometer.setup();
   windSensor.setup();
   rainSensor.setup();
+  bleUart.setup();
 }
 
 void loop() {
   int light = lightSensor.read();
   float temperature = barometer.readTemperature();
-  int windDirection = windSensor.readWindDirection();
+  float pressure = barometer.readPressure();
+  float windDirection = windSensor.readWindDirection();
   float windSpeed = windSensor.readWindSpeed();
   float rain = rainSensor.read();
 
-  Serial.println("===== New Data =====");
+  Serial.println("========= New Data =========");
   Serial.println("Light: " + String(light));
   Serial.println("Temperature: " + String(temperature));
+  Serial.println("Pressure: " + String(pressure));
   Serial.println("Wind Direction: " + String(windDirection));
   Serial.println("Wind Speed: " + String(windSpeed));
   Serial.println("Rain: " + String(rain));
 
-  delay(500);
+  bleUart.loop(light, temperature, pressure, windDirection, windSpeed, rain);
+
+  delay(200);
 }

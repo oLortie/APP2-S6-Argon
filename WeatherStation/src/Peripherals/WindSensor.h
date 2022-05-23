@@ -6,23 +6,23 @@
  * Date: mai 2022
  ====================================================== */
 
- #include <Particle.h>
+#include <Particle.h>
 
- #define WIND_DIRECTION_PIN A2
- #define WIND_SPEED_PIN A3
- #define REFERENCE_SPEED 2.4
+#define WIND_DIRECTION_PIN A2
+#define WIND_SPEED_PIN A3
+#define REFERENCE_SPEED 2.4
 
- class WindSensor {
-     private:
+class WindSensor {
+    private:
         int nb_contacts;
         int last_contact_timestamp_ms;
         int time_since_last_contact_ms;
 
-     public:
+    public:
         WindSensor();
         ~WindSensor();
         void setup();
-        int readWindDirection();
+        float readWindDirection();
         float readWindSpeed();
         void updateNbContacts();
- };
+};
