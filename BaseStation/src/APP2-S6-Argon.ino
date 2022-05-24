@@ -6,9 +6,13 @@
  * Date: mai 2022
  ====================================================== */
 
+uint8_t txBuf[UART_TX_BUF_SIZE];
+size_t txLen = 0;
+
 // Bluetooth/UART Central
-const BleUuid serviceUuid("de716eda-7a41-4c7d-b5a3-4d3d192fe7cd");
+const BleUuid serviceUuid("7e26b893-38ba-46af-ab66-a643b0777503");
 const BleUuid rxUuid("de716eda-7a41-4c7d-b5a3-4d3d192fe7cd");
+const BleUuid txUuid("3cb05614-b9f1-437d-b01c-ded54b07a4d9");
 
 const size_t SCAN_RESULT_COUNT = 20;
 
@@ -17,6 +21,7 @@ const unsigned long SCAN_PERIOD_MS = 2000;
 BleScanResult scanResults[SCAN_RESULT_COUNT];
 
 BleCharacteristic peerRxCharacteristic;
+BleCharacteristic peerTxCharacteristic;
 BlePeerDevice peer;
 
 unsigned long lastScan = 0;
@@ -28,23 +33,27 @@ IPAddress serverPaul(10, 0, 0, 141);
 IPAddress server = serverPaul;
 int port = 8888; // Port du serveur
 
+const size_t UART_TX_BUF_SIZE = 20;
+
 void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) {
-  /**************************************
+	/**************************************
 	!! Mapping !!
 	Light: 2 bytes (0 à ~2500)
 	Température: 2 bytes + 40 Celcius pour une étendue postive * 10 pour les dizièmes (-40 à 85 Celcius)
 	Pression: 3 bytes en Pascal (300 à 1200 hPa)
 	Direction du vent: 2 bytes * 10 pour les dizièmes (0 à 360 Degrés)
-	Force du vent: 2 bytes (0 à ?? km/h)
-	Pluie: 2 bytes (0 à ?? mm)
+	Force du vent: 2 bytes (0 à ?? km/h) * 10 pour les dizièmes
+	Pluie: 2 bytes (0 à ?? mm) * 10 pour les dizièmes
+	Humidité: 1 byte (0 à 100 %)
 	**************************************/
 
-  /*int light = (data[0] << 8) | data[1];
+  int light = (data[0] << 8) | data[1];
   float temperature = float(((data[2] << 8) | data[3]))/10 - 40;
   float pressure = ((data[4] << 16) | (data[5] << 8)) | data[6];
   float windDirection = float(((data[7] << 8) | data[8]))/10;
   float windSpeed = (data[9] << 8) | data[10];
   float rain = (data[11] << 8) | data[12];
+  float humidity = data[13];
 
   Serial.println("========= New Data =========");
   Serial.println("Light: " + String(light));
@@ -52,7 +61,8 @@ void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, 
   Serial.println("Pressure: " + String(pressure));
   Serial.println("Wind Direction: " + String(windDirection));
   Serial.println("Wind Speed: " + String(windSpeed));
-  Serial.println("Rain: " + String(rain));*/
+  Serial.println("Rain: " + String(rain));
+  Serial.println("Humidité: " + String(humidity));
 
   if(client.connected()) {
     client.write(data, len);
@@ -61,6 +71,7 @@ void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, 
 
 void setup() {
   Serial.begin(9600);
+  Serial1.begin(9600);
   waitFor(Serial.isConnected, 30000);
 
   // Bluetooth/UART Central
@@ -78,8 +89,19 @@ void setup() {
 }
 
 void loop() {
+  if(Serial.available()) {
+    txBuf[0] = Serial.read();
+    txLen = 1;
+  }
+
   // Bluetooth/UART Central
-  if (!BLE.connected()) {
+  if (BLE.connected()) {
+    if (txLen > 0) {
+      // Transmit the data to the BLE peripheral
+      peerRxCharacteristic.setValue(txBuf, txLen);
+      txLen = 0;
+    }
+  } else {
     if (millis() - lastScan >= SCAN_PERIOD_MS) {
       // Time to scan
       lastScan = millis();
@@ -103,6 +125,39 @@ void loop() {
       }
     }
   }
+
+  /*if(Serial1.available() >= 64) {
+    Serial.println(Serial1.available());
+    Serial1.flush();
+    uint8_t txBuf[UART_TX_BUF_SIZE];
+    size_t txLen = 14;
+
+    for(int i = 0; i < int(txLen) ; i++) {
+      txBuf[i] = Serial1.read();
+    }
+
+    int light = (txBuf[0] << 8) | txBuf[1];
+    float temperature = float(((txBuf[2] << 8) | txBuf[3]))/10 - 40;
+    float pressure = ((txBuf[4] << 16) | (txBuf[5] << 8)) | txBuf[6];
+    float windDirection = float(((txBuf[7] << 8) | txBuf[8]))/10;
+    float windSpeed = (txBuf[9] << 8) | txBuf[10];
+    float rain = (txBuf[11] << 8) | txBuf[12];
+    float humidity = txBuf[13];
+
+    Serial.println("========= New Data =========");
+    Serial.println(Serial1.available());
+    Serial.println("Light: " + String(light));
+    Serial.println("Temperature: " + String(temperature));
+    Serial.println("Pressure: " + String(pressure));
+    Serial.println("Wind Direction: " + String(windDirection));
+    Serial.println("Wind Speed: " + String(windSpeed));
+    Serial.println("Rain: " + String(rain));
+    Serial.println("Humidité: " + String(humidity));
+
+    //if(client.connected()) {
+    //  client.write(txBuf);
+    //}
+  }*/
 
   // TCP
   if(client.getWriteError()) {

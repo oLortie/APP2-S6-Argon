@@ -6,41 +6,44 @@
  * Date: mai 2022
  ====================================================== */
 
-#include "Peripherals/LightSensor.h"
+/*#include "Peripherals/LightSensor.h"
 #include "Peripherals/DPS310.h"
 #include "Peripherals/WindSensor.h"
 #include "Peripherals/RainSensor.h"
+#include "Peripherals/DHT11.h"*/
 #include "Peripherals/BleUart.h"
+#include "Peripherals/UART.h"
 
-LightSensor lightSensor;
+/*LightSensor lightSensor;
 DPS310 barometer;
 WindSensor windSensor;
 RainSensor rainSensor;
+DHT11 humiditySensor;*/
 BleUart bleUart;
+UART uart;
 
 void setup() {
   Serial.begin(9600);
   waitFor(Serial.isConnected, 30000);
 
-  lightSensor = LightSensor();
+  /*lightSensor = LightSensor();
   barometer = DPS310();
   windSensor = WindSensor();
   rainSensor = RainSensor();
+  humiditySensor= DHT11();*/
   bleUart = BleUart();
+  uart = UART();
 
-  barometer.setup();
+  /*barometer.setup();
   windSensor.setup();
   rainSensor.setup();
+  humiditySensor.setup();*/
   bleUart.setup();
+  uart.setup();
 }
 
 void loop() {
-  int light = lightSensor.read();
-  float temperature = barometer.readTemperature();
-  float pressure = barometer.readPressure();
-  float windDirection = windSensor.readWindDirection();
-  float windSpeed = windSensor.readWindSpeed();
-  float rain = rainSensor.read();
+
 
   Serial.println("========= New Data =========");
   Serial.println("Light: " + String(light));
@@ -49,8 +52,10 @@ void loop() {
   Serial.println("Wind Direction: " + String(windDirection));
   Serial.println("Wind Speed: " + String(windSpeed));
   Serial.println("Rain: " + String(rain));
+  Serial.println("Humidity: " + String(humidity));
 
-  bleUart.loop(light, temperature, pressure, windDirection, windSpeed, rain);
+  uart.send(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
+  bleUart.loop(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
 
   delay(200);
 }

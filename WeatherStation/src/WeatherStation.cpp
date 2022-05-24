@@ -16,16 +16,20 @@
 #include "Peripherals/DPS310.h"
 #include "Peripherals/WindSensor.h"
 #include "Peripherals/RainSensor.h"
+#include "Peripherals/DHT11.h"
 #include "Peripherals/BleUart.h"
+#include "Peripherals/UART.h"
 
 void setup();
 void loop();
-#line 15 "c:/Users/Utilisateur/Documents/Particle_argon/S6_APP2/APP2-S6-Argon/WeatherStation/src/WeatherStation.ino"
+#line 17 "c:/Users/Utilisateur/Documents/Particle_argon/S6_APP2/APP2-S6-Argon/WeatherStation/src/WeatherStation.ino"
 LightSensor lightSensor;
 DPS310 barometer;
 WindSensor windSensor;
 RainSensor rainSensor;
+DHT11 humiditySensor;
 BleUart bleUart;
+UART uart;
 
 void setup() {
   Serial.begin(9600);
@@ -35,12 +39,16 @@ void setup() {
   barometer = DPS310();
   windSensor = WindSensor();
   rainSensor = RainSensor();
+  humiditySensor= DHT11();
   bleUart = BleUart();
+  uart = UART();
 
   barometer.setup();
   windSensor.setup();
   rainSensor.setup();
+  humiditySensor.setup();
   bleUart.setup();
+  uart.setup();
 }
 
 void loop() {
@@ -50,6 +58,7 @@ void loop() {
   float windDirection = windSensor.readWindDirection();
   float windSpeed = windSensor.readWindSpeed();
   float rain = rainSensor.read();
+  float humidity = humiditySensor.read();
 
   Serial.println("========= New Data =========");
   Serial.println("Light: " + String(light));
@@ -58,8 +67,10 @@ void loop() {
   Serial.println("Wind Direction: " + String(windDirection));
   Serial.println("Wind Speed: " + String(windSpeed));
   Serial.println("Rain: " + String(rain));
+  Serial.println("Humidity: " + String(humidity));
 
-  bleUart.loop(light, temperature, pressure, windDirection, windSpeed, rain);
+  uart.send(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
+  bleUart.loop(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
 
   delay(200);
 }
