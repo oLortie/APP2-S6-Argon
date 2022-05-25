@@ -14,16 +14,24 @@ const BleUuid serviceUuid("7e26b893-38ba-46af-ab66-a643b0777503");
 const BleUuid txUuid("de716eda-7a41-4c7d-b5a3-4d3d192fe7cd");
 const BleUuid rxUuid("3cb05614-b9f1-437d-b01c-ded54b07a4d9");
 
-void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) {
+void BleUart::onDataReceivedStatic(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) 
+{
+    BleUart *handler = (BleUart *)context;
+    handler->onDataReceived(data, len, peer); 
+}
+
+void BleUart::onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer) {
+	int light = lightSensor.read();
+	float temperature = barometer.readTemperature();
+	float pressure = barometer.readPressure();
+	float windDirection = windSensor.readWindDirection();
+	float windSpeed = windSensor.readWindSpeed();
+	float rain = rainSensor.read();
+	float humidity = humiditySensor.read();
+
 	switch(data[0]) {
 		case '0':
-			int light = getLight();
-			float temperature = barometer.readTemperature();
-			float pressure = barometer.readPressure();
-			float windDirection = windSensor.readWindDirection();
-			float windSpeed = windSensor.readWindSpeed();
-			float rain = rainSensor.read();
-			float humidity = humiditySensor.read();
+			send(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
 			break;
 		
 		default:
@@ -32,10 +40,17 @@ void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, 
 	}
 }
 
-BleCharacteristic txCharacteristic("tx", BleCharacteristicProperty::NOTIFY, txUuid, serviceUuid);
-BleCharacteristic rxCharacteristic("rx", BleCharacteristicProperty::WRITE_WO_RSP, rxUuid, serviceUuid, onDataReceived, NULL);
+/*BleCharacteristic txCharacteristic("tx", BleCharacteristicProperty::NOTIFY, txUuid, serviceUuid);
+BleCharacteristic rxCharacteristic("rx", BleCharacteristicProperty::WRITE_WO_RSP, rxUuid, serviceUuid, onDataReceived, NULL);*/
 
 BleUart::BleUart() {
+	txCharacteristic = BleCharacteristic("tx", BleCharacteristicProperty::NOTIFY, txUuid, serviceUuid);
+	rxCharacteristic = BleCharacteristic("rx", BleCharacteristicProperty::WRITE_WO_RSP, rxUuid, serviceUuid, onDataReceivedStatic, this);
+	lightSensor = LightSensor();
+	barometer = DPS310();
+	windSensor = WindSensor();
+	rainSensor = RainSensor();
+	humiditySensor = DHT11();
 }
 
 BleUart::~BleUart() {
@@ -58,7 +73,7 @@ void BleUart::setup() {
 	humiditySensor.setup();
 }
 
-void BleUart::loop(int light, float temperature, float pressure, float windDirection, float windSpeed, float rain, float humidity) {
+void BleUart::send(int light, float temperature, float pressure, float windDirection, float windSpeed, float rain, float humidity) {
 	/**************************************
 	!! Mapping !!
 	Light: 2 bytes (0 à ~2500)
@@ -89,32 +104,4 @@ void BleUart::loop(int light, float temperature, float pressure, float windDirec
 	txBuf[13] = int(humidity) & 0xFF;
 
 	txCharacteristic.setValue(txBuf, txLen);
-}
-
-int BleUart::getLight() {
-	return lightSensor.read();
-}
-
-float BleUart::getTemperature() {
-	return barometer.readTemperature();
-}
-
-float BleUart::getPressure() {
-	return barometer.readPressure();
-}
-
-float BleUart::getWindDirection() {
-	return windSensor.readWindDirection();
-}
-
-float BleUart::getWindSpeed() {
-	return windSensor.readWindSpeed();
-}
-
-float BleUart::getRain() {
-	return rainSensor.read();
-}
-
-float BleUart::getHumidity() {
-	return humiditySensor.read();
 }

@@ -45,7 +45,7 @@ void setup() {
 void loop() {
 
 
-  Serial.println("========= New Data =========");
+  /*Serial.println("========= New Data =========");
   Serial.println("Light: " + String(light));
   Serial.println("Temperature: " + String(temperature));
   Serial.println("Pressure: " + String(pressure));
@@ -57,5 +57,5 @@ void loop() {
   uart.send(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
   bleUart.loop(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
 
-  delay(200);
+  delay(200);*/
 }
