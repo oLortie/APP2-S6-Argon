@@ -68,7 +68,7 @@ void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, 
   float temperature = float(((data[2] << 8) | data[3]))/10 - 40;
   float pressure = ((data[4] << 16) | (data[5] << 8)) | data[6];
   float windDirection = float(((data[7] << 8) | data[8]))/10;
-  float windSpeed = (data[9] << 8) | data[10];
+  float windSpeed = ((data[9] << 8) | data[10])/10;
   float rain = ((data[11] << 8) | data[12])/10;
   float humidity = data[13];
 
@@ -159,7 +159,7 @@ void loop() {
     float temperature = float(((rxBuf[2] << 8) | rxBuf[3]))/10 - 40;
     float pressure = ((rxBuf[4] << 16) | (rxBuf[5] << 8)) | rxBuf[6];
     float windDirection = float(((rxBuf[7] << 8) | rxBuf[8]))/10;
-    float windSpeed = (rxBuf[9] << 8) | rxBuf[10];
+    float windSpeed = ((data[9] << 8) | data[10])/10;
     float rain = ((data[11] << 8) | data[12])/10;
     float humidity = rxBuf[13];
 
