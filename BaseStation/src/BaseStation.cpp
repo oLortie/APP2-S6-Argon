@@ -3,7 +3,7 @@
 /******************************************************/
 
 #include "Particle.h"
-#line 1 "c:/Users/Utilisateur/Documents/Particle_argon/S6_APP2/APP2-S6-Argon/BaseStation/src/APP2-S6-Argon.ino"
+#line 1 "c:/Users/Utilisateur/Documents/Particle_argon/S6_APP2/APP2-S6-Argon/BaseStation/src/BaseStation.ino"
 /* ======================================================
  * Projet: APP2-S6-Argon
  * Fichier: BaseStation.ino
@@ -15,7 +15,7 @@
 void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context);
 void setup();
 void loop();
-#line 9 "c:/Users/Utilisateur/Documents/Particle_argon/S6_APP2/APP2-S6-Argon/BaseStation/src/APP2-S6-Argon.ino"
+#line 9 "c:/Users/Utilisateur/Documents/Particle_argon/S6_APP2/APP2-S6-Argon/BaseStation/src/BaseStation.ino"
 #define isBluetooth
 
 const size_t UART_TX_BUF_SIZE = 20;
@@ -159,8 +159,8 @@ void loop() {
     float temperature = float(((rxBuf[2] << 8) | rxBuf[3]))/10 - 40;
     float pressure = ((rxBuf[4] << 16) | (rxBuf[5] << 8)) | rxBuf[6];
     float windDirection = float(((rxBuf[7] << 8) | rxBuf[8]))/10;
-    float windSpeed = ((data[9] << 8) | data[10])/10;
-    float rain = ((data[11] << 8) | data[12])/10;
+    float windSpeed = ((rxBuf[9] << 8) | rxBuf[10])/10;
+    float rain = ((rxBuf[11] << 8) | rxBuf[12])/10;
     float humidity = rxBuf[13];
 
     Serial.println("========= New Data =========");
