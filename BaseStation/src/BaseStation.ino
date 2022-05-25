@@ -99,6 +99,7 @@ void setup() {
 }
 
 void loop() {
+  //Lecture des commandes en input
   if(Serial.available()) {
     txBuf[0] = Serial.read();
     txLen = 1;
@@ -135,6 +136,7 @@ void loop() {
 
 #else
 
+  //UART
   if(txLen > 0) {
     Serial1.write(txBuf, txLen);
     txLen = 0;
@@ -149,8 +151,8 @@ void loop() {
     float temperature = float(((rxBuf[2] << 8) | rxBuf[3]))/10 - 40;
     float pressure = ((rxBuf[4] << 16) | (rxBuf[5] << 8)) | rxBuf[6];
     float windDirection = float(((rxBuf[7] << 8) | rxBuf[8]))/10;
-    float windSpeed = ((data[9] << 8) | data[10])/10;
-    float rain = ((data[11] << 8) | data[12])/10;
+    float windSpeed = ((rxBuf[9] << 8) | rxBuf[10])/10;
+    float rain = ((rxBuf[11] << 8) | rxBuf[12])/10;
     float humidity = rxBuf[13];
 
     Serial.println("========= New Data =========");
