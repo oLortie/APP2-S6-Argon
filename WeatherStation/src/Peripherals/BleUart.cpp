@@ -10,16 +10,19 @@
 
 const size_t UART_TX_BUF_SIZE = 20;
 
+// UUid pour le service et pou Rx/Tx
 const BleUuid serviceUuid("7e26b893-38ba-46af-ab66-a643b0777503");
 const BleUuid txUuid("de716eda-7a41-4c7d-b5a3-4d3d192fe7cd");
 const BleUuid rxUuid("3cb05614-b9f1-437d-b01c-ded54b07a4d9");
 
+// Callback quand on reçoit du data (fonction statique pour pouvoir l'appeler de l'intérieur de la classe)
 void BleUart::onDataReceivedStatic(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) 
 {
     BleUart *handler = (BleUart *)context;
     handler->onDataReceived(data, len, peer); 
 }
 
+// Callback quand on reçoit du data
 void BleUart::onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer) {
 	int light = lightSensor.read();
 	float temperature = barometer.readTemperature();
@@ -29,6 +32,10 @@ void BleUart::onDataReceived(const uint8_t* data, size_t len, const BlePeerDevic
 	float rain = rainSensor.read();
 	float humidity = humiditySensor.read();
 
+	// Commande 0: Envoyer tout le data
+	// Commande 1: Envoyer seulement la lumière
+	// Commande 2: Envoyer seulement la température
+	// Etc.
 	switch(data[0]) {
 		case '0':
 			send(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
@@ -43,7 +50,7 @@ void BleUart::onDataReceived(const uint8_t* data, size_t len, const BlePeerDevic
 			break;
 		
 		default:
-			Serial.println("Mauvaise commande noob!!");
+			Serial.println("Mauvaise commande!");
 			break;
 	}
 }
@@ -78,6 +85,7 @@ void BleUart::setup() {
 	humiditySensor.setup();
 }
 
+// Fonction qui permet d'envoyer tout le data des capteurs
 void BleUart::send(int light, float temperature, float pressure, float windDirection, float windSpeed, float rain, float humidity) {
 	/**************************************
 	!! Mapping !!

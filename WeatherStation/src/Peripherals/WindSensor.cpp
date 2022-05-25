@@ -28,6 +28,7 @@ float WindSensor::readWindDirection() {
     int32_t direction = analogRead(WIND_DIRECTION_PIN);
     float angle = -1;
 
+    // Mapper les directions à des voltages
     if (3750 <= direction && direction < 3800) {
         angle = 0;
     } else if (3290 <= direction && direction < 3340) {

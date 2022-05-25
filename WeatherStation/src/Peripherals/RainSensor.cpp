@@ -19,6 +19,7 @@ RainSensor::~RainSensor() {
 void RainSensor::setup() {
     pinMode(RAIN_SENSOR_PIN, INPUT);
 
+    // Attacher un interrupt pour compter le nombre de fois que l'eau a tombé
     attachInterrupt(RAIN_SENSOR_PIN, &RainSensor::updateNbContacts, this, RISING);
 }
 

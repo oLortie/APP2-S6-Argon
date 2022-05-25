@@ -21,6 +21,7 @@ void DHT11::setup() {
 }
 
 float DHT11::read() {
+    // Signal pour se mettre prêt à recevoir le data
     pinMode(HUMIDITY_SENSOR_PIN, OUTPUT);
     digitalWrite(HUMIDITY_SENSOR_PIN, LOW);
     delay(18);
@@ -29,10 +30,12 @@ float DHT11::read() {
 
     int64_t rawData[40];
     int64_t data = 0;
+
+    // Recevoir le premier pulse et mesurer la longueur
     int lowTime = pulseIn(HUMIDITY_SENSOR_PIN, LOW);
 
     if(75 < lowTime && lowTime < 85) {
-
+        // Recevoir les 40 pulses et stocker directement leurs longueurs
         for(int i = 0; i < 40; i++) {
             rawData[i] = pulseIn(HUMIDITY_SENSOR_PIN, HIGH);
         }
@@ -40,6 +43,7 @@ float DHT11::read() {
         pinMode(HUMIDITY_SENSOR_PIN, OUTPUT);
         digitalWrite(HUMIDITY_SENSOR_PIN, HIGH);
 
+        // Déterminer le contenu du data selon la longueur des pulses
         for(int i = 0; i < 40; i++) {
             if(rawData[i] < 47) { // 24
                 // new bit = 0

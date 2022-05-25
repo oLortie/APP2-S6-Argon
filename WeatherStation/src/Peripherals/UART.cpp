@@ -30,8 +30,9 @@ void UART::setup() {
 }
 
 void UART::loop() {
+	// Vérifier si du data a été reçu sur Serial1
     if(Serial1.available()) {
-        Serial.println("CMD in porcess!");
+		// Lire la commande reçue
         char cmd = Serial1.read();
 
         int light = lightSensor.read();
@@ -42,6 +43,10 @@ void UART::loop() {
         float rain = rainSensor.read();
         float humidity = humiditySensor.read();
 
+		// Commande 0: Envoyer tout le data
+		// Commande 1: Envoyer seulement la lumière
+		// Commande 2: Envoyer seulement la température
+		// Etc.
         switch(cmd) {
             case '0':
                 send(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
@@ -56,13 +61,13 @@ void UART::loop() {
                 break;
             
             default:
-                Serial.println("Mauvaise commande noob!!");
+                Serial.println("Mauvaise commande!");
                 break;
         }
-
     }
 }
 
+// Fonction qui permet d'envoyer tou le data des capteurs
 void UART::send(int light, float temperature, float pressure, float windDirection, float windSpeed, float rain, float humidity) {
     /**************************************
 	!! Mapping !!
