@@ -7,16 +7,26 @@
  ====================================================== */
 
 #include <Particle.h>
+#include "LightSensor.h"
+#include "DPS310.h"
+#include "WindSensor.h"
+#include "RainSensor.h"
+#include "DHT11.h"
 
-//#define LIGHT_SENSOR_PIN A0
 const size_t UART_TX_BUF_SIZE = 20;
 
 class UART {
     private:
+        LightSensor lightSensor;
+        DPS310 barometer;
+        WindSensor windSensor;
+        RainSensor rainSensor;
+        DHT11 humiditySensor;
 
     public:
         UART();
         ~UART();
         void setup();
-        void send(String cmd, int light, float temperature, float pressure, float windDirection, float windSpeed, float rain, float humidity);
+        void loop();
+        void send(int light, float temperature, float pressure, float windDirection, float windSpeed, float rain, float humidity);
 };

@@ -6,9 +6,16 @@
  * Date: mai 2022
  ====================================================== */
 
-uint8_t txBuf[UART_TX_BUF_SIZE];
-size_t txLen = 0;
+#define isBluetooth
 
+const size_t UART_TX_BUF_SIZE = 20;
+
+uint8_t txBuf[UART_TX_BUF_SIZE];
+uint8_t rxBuf[UART_TX_BUF_SIZE];
+size_t txLen = 0;
+size_t rxLen = 14;
+
+#ifdef isBluetooth
 // Bluetooth/UART Central
 const BleUuid serviceUuid("7e26b893-38ba-46af-ab66-a643b0777503");
 const BleUuid rxUuid("de716eda-7a41-4c7d-b5a3-4d3d192fe7cd");
@@ -25,6 +32,7 @@ BleCharacteristic peerTxCharacteristic;
 BlePeerDevice peer;
 
 unsigned long lastScan = 0;
+#endif
 
 // TCP
 TCPClient client;
@@ -33,8 +41,7 @@ IPAddress serverPaul(10, 0, 0, 141);
 IPAddress server = serverPaul;
 int port = 8888; // Port du serveur
 
-const size_t UART_TX_BUF_SIZE = 20;
-
+#ifdef isBluetooth
 void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) {
 	/**************************************
 	!! Mapping !!
@@ -52,7 +59,7 @@ void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, 
   float pressure = ((data[4] << 16) | (data[5] << 8)) | data[6];
   float windDirection = float(((data[7] << 8) | data[8]))/10;
   float windSpeed = (data[9] << 8) | data[10];
-  float rain = (data[11] << 8) | data[12];
+  float rain = ((data[11] << 8) | data[12])/10;
   float humidity = data[13];
 
   Serial.println("========= New Data =========");
@@ -62,21 +69,24 @@ void onDataReceived(const uint8_t* data, size_t len, const BlePeerDevice& peer, 
   Serial.println("Wind Direction: " + String(windDirection));
   Serial.println("Wind Speed: " + String(windSpeed));
   Serial.println("Rain: " + String(rain));
-  Serial.println("Humidité: " + String(humidity));
+  Serial.println("Humidity: " + String(humidity));
 
   if(client.connected()) {
     client.write(data, len);
   }
 }
+#endif
 
 void setup() {
   Serial.begin(9600);
   Serial1.begin(9600);
   waitFor(Serial.isConnected, 30000);
 
+#ifdef isBluetooth
   // Bluetooth/UART Central
   BLE.on();
   peerRxCharacteristic.onDataReceived(onDataReceived, &peerRxCharacteristic);
+#endif
 
   // TCP
   while(true) {
@@ -94,30 +104,27 @@ void loop() {
     txLen = 1;
   }
 
+#ifdef isBluetooth
   // Bluetooth/UART Central
   if (BLE.connected()) {
     if (txLen > 0) {
-      // Transmit the data to the BLE peripheral
-      peerRxCharacteristic.setValue(txBuf, txLen);
+      peerTxCharacteristic.setValue(txBuf, txLen);
       txLen = 0;
     }
   } else {
     if (millis() - lastScan >= SCAN_PERIOD_MS) {
-      // Time to scan
       lastScan = millis();
     	size_t count = BLE.scan(scanResults, SCAN_RESULT_COUNT);
 
       if (count > 0) {
         for (uint8_t ii = 0; ii < count; ii++) {
-          // Our serial peripheral only supports one service, so we only look for one here.
-          // In some cases, you may want to get all of the service UUIDs and scan the list
-          // looking to see if the serviceUuid is anywhere in the list.
           BleUuid foundServiceUuid;
           size_t svcCount = scanResults[ii].advertisingData().serviceUUID(&foundServiceUuid, 1);
           if (svcCount > 0 && foundServiceUuid == serviceUuid) {
             peer = BLE.connect(scanResults[ii].address());
             if (peer.connected()) {
               peer.getCharacteristicByUUID(peerRxCharacteristic, rxUuid);
+              peer.getCharacteristicByUUID(peerTxCharacteristic, txUuid);
             }
             break;
           }
@@ -126,38 +133,40 @@ void loop() {
     }
   }
 
-  /*if(Serial1.available() >= 64) {
-    Serial.println(Serial1.available());
-    Serial1.flush();
-    uint8_t txBuf[UART_TX_BUF_SIZE];
-    size_t txLen = 14;
+#else
 
-    for(int i = 0; i < int(txLen) ; i++) {
-      txBuf[i] = Serial1.read();
+  if(txLen > 0) {
+    Serial1.write(txBuf, txLen);
+    txLen = 0;
+  }
+
+  if(Serial1.available() >= int(rxLen)) {
+    for(int i = 0; i < int(rxLen) ; i++) {
+      rxBuf[i] = Serial1.read();
     }
 
-    int light = (txBuf[0] << 8) | txBuf[1];
-    float temperature = float(((txBuf[2] << 8) | txBuf[3]))/10 - 40;
-    float pressure = ((txBuf[4] << 16) | (txBuf[5] << 8)) | txBuf[6];
-    float windDirection = float(((txBuf[7] << 8) | txBuf[8]))/10;
-    float windSpeed = (txBuf[9] << 8) | txBuf[10];
-    float rain = (txBuf[11] << 8) | txBuf[12];
-    float humidity = txBuf[13];
+    int light = (rxBuf[0] << 8) | rxBuf[1];
+    float temperature = float(((rxBuf[2] << 8) | rxBuf[3]))/10 - 40;
+    float pressure = ((rxBuf[4] << 16) | (rxBuf[5] << 8)) | rxBuf[6];
+    float windDirection = float(((rxBuf[7] << 8) | rxBuf[8]))/10;
+    float windSpeed = (rxBuf[9] << 8) | rxBuf[10];
+    float rain = ((data[11] << 8) | data[12])/10;
+    float humidity = rxBuf[13];
 
     Serial.println("========= New Data =========");
-    Serial.println(Serial1.available());
     Serial.println("Light: " + String(light));
     Serial.println("Temperature: " + String(temperature));
     Serial.println("Pressure: " + String(pressure));
     Serial.println("Wind Direction: " + String(windDirection));
     Serial.println("Wind Speed: " + String(windSpeed));
     Serial.println("Rain: " + String(rain));
-    Serial.println("Humidité: " + String(humidity));
+    Serial.println("Humidity: " + String(humidity));
 
-    //if(client.connected()) {
-    //  client.write(txBuf);
-    //}
-  }*/
+    if(client.connected()) {
+      client.write(rxBuf, rxLen);
+    }
+  }
+#endif
 
   // TCP
   if(client.getWriteError()) {

@@ -11,7 +11,6 @@
 #define RAIN_SENSOR_PIN A5
 #define MM_FACTOR 0.2794
 
-
 class RainSensor {
     private:
         int nb_contacts;

@@ -33,15 +33,20 @@ void BleUart::onDataReceived(const uint8_t* data, size_t len, const BlePeerDevic
 		case '0':
 			send(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
 			break;
+
+		case '1':
+			send(light, 0, 0, 0, 0, 0, 0);
+			break;
+
+		case '2':
+			send(0, temperature, 0, 0, 0, 0, 0);
+			break;
 		
 		default:
 			Serial.println("Mauvaise commande noob!!");
 			break;
 	}
 }
-
-/*BleCharacteristic txCharacteristic("tx", BleCharacteristicProperty::NOTIFY, txUuid, serviceUuid);
-BleCharacteristic rxCharacteristic("rx", BleCharacteristicProperty::WRITE_WO_RSP, rxUuid, serviceUuid, onDataReceived, NULL);*/
 
 BleUart::BleUart() {
 	txCharacteristic = BleCharacteristic("tx", BleCharacteristicProperty::NOTIFY, txUuid, serviceUuid);
@@ -102,6 +107,15 @@ void BleUart::send(int light, float temperature, float pressure, float windDirec
 	txBuf[11] = (int(rain*10) >> 8) & 0xFF;
 	txBuf[12] = int(rain*10) & 0xFF;
 	txBuf[13] = int(humidity) & 0xFF;
+
+	Serial.println("========= New Data =========");
+	Serial.println("Light: " + String(light));
+	Serial.println("Temperature: " + String(temperature));
+	Serial.println("Pressure: " + String(pressure));
+	Serial.println("Wind Direction: " + String(windDirection));
+	Serial.println("Wind Speed: " + String(windSpeed));
+	Serial.println("Rain: " + String(rain));
+	Serial.println("Humidity: " + String(humidity));
 
 	txCharacteristic.setValue(txBuf, txLen);
 }

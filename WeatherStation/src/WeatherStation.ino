@@ -6,56 +6,31 @@
  * Date: mai 2022
  ====================================================== */
 
-/*#include "Peripherals/LightSensor.h"
-#include "Peripherals/DPS310.h"
-#include "Peripherals/WindSensor.h"
-#include "Peripherals/RainSensor.h"
-#include "Peripherals/DHT11.h"*/
-#include "Peripherals/BleUart.h"
-#include "Peripherals/UART.h"
+#define isBluetooth
 
-/*LightSensor lightSensor;
-DPS310 barometer;
-WindSensor windSensor;
-RainSensor rainSensor;
-DHT11 humiditySensor;*/
+#ifdef isBluetooth
+#include "Peripherals/BleUart.h"
 BleUart bleUart;
+#else
+#include "Peripherals/UART.h"
 UART uart;
+#endif
 
 void setup() {
   Serial.begin(9600);
   waitFor(Serial.isConnected, 30000);
 
-  /*lightSensor = LightSensor();
-  barometer = DPS310();
-  windSensor = WindSensor();
-  rainSensor = RainSensor();
-  humiditySensor= DHT11();*/
+#ifdef isBluetooth
   bleUart = BleUart();
-  uart = UART();
-
-  /*barometer.setup();
-  windSensor.setup();
-  rainSensor.setup();
-  humiditySensor.setup();*/
   bleUart.setup();
+#else
+  uart = UART();
   uart.setup();
+#endif
 }
 
 void loop() {
-
-
-  /*Serial.println("========= New Data =========");
-  Serial.println("Light: " + String(light));
-  Serial.println("Temperature: " + String(temperature));
-  Serial.println("Pressure: " + String(pressure));
-  Serial.println("Wind Direction: " + String(windDirection));
-  Serial.println("Wind Speed: " + String(windSpeed));
-  Serial.println("Rain: " + String(rain));
-  Serial.println("Humidity: " + String(humidity));
-
-  uart.send(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
-  bleUart.loop(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
-
-  delay(200);*/
+#ifndef isBluetooth
+  uart.loop();
+#endif
 }

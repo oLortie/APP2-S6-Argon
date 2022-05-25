@@ -9,7 +9,11 @@
 #include "UART.h"
 
 UART::UART() {
-
+    lightSensor = LightSensor();
+	barometer = DPS310();
+	windSensor = WindSensor();
+	rainSensor = RainSensor();
+	humiditySensor = DHT11();
 }
 
 UART::~UART() {
@@ -18,9 +22,48 @@ UART::~UART() {
 
 void UART::setup() {
     Serial1.begin(9600);
+
+    barometer.setup();
+	windSensor.setup();
+	rainSensor.setup();
+	humiditySensor.setup();
 }
 
-void UART::send(String cmd, int light, float temperature, float pressure, float windDirection, float windSpeed, float rain, float humidity) {
+void UART::loop() {
+    if(Serial1.available()) {
+        Serial.println("CMD in porcess!");
+        char cmd = Serial1.read();
+
+        int light = lightSensor.read();
+        float temperature = barometer.readTemperature();
+        float pressure = barometer.readPressure();
+        float windDirection = windSensor.readWindDirection();
+        float windSpeed = windSensor.readWindSpeed();
+        float rain = rainSensor.read();
+        float humidity = humiditySensor.read();
+
+        switch(cmd) {
+            case '0':
+                send(light, temperature, pressure, windDirection, windSpeed, rain, humidity);
+                break;
+
+            case '1':
+                send(light, 0, 0, 0, 0, 0, 0);
+                break;
+
+            case '2':
+                send(0, temperature, 0, 0, 0, 0, 0);
+                break;
+            
+            default:
+                Serial.println("Mauvaise commande noob!!");
+                break;
+        }
+
+    }
+}
+
+void UART::send(int light, float temperature, float pressure, float windDirection, float windSpeed, float rain, float humidity) {
     /**************************************
 	!! Mapping !!
 	Light: 2 bytes (0 à ~2500)
@@ -50,67 +93,14 @@ void UART::send(String cmd, int light, float temperature, float pressure, float 
 	txBuf[12] = int(rain*10) & 0xFF;
 	txBuf[13] = int(humidity) & 0xFF;
 
-    Serial1.write(txBuf, txLen);
-    Serial1.flush();
-}
-/*
-void sendCommand() {
-    String command;
-    while(Serial.available() && txLen < UART_TX_BUF_SIZE) {
-        txBuf[txLen++] = Serial.read();
-        switch (txBuf[txLen - 1]) {
-            case '1':
-                command = "All";
-                break;
-            case '2':
-                command = "Vent";
-                break;
-            case '3':
-                command = "Pluie";
-                break;
-            case '4':
-                command = "Temperature";
-                break;
-            case '5':
-                command = "Pression";
-                break;
-            case '6':
-                command = "Humidite";
-                break;
-            case '7':
-                command = "Lumiere";
-                break;
-            default:
-                Serial.println("Entrée invalide");  
-        }
-        
-    }
-    if (command != NULL) {
-        Serial.println("*****************");
-        Serial.print("Commande envoyé: ");
-        Serial.println(command);
-        // Transmit the data to the BLE peripheral
-        Serial1.write(command);
-        txLen = 0;
-    }
-}
+    Serial.println("========= New Data =========");
+	Serial.println("Light: " + String(light));
+	Serial.println("Temperature: " + String(temperature));
+	Serial.println("Pressure: " + String(pressure));
+	Serial.println("Wind Direction: " + String(windDirection));
+	Serial.println("Wind Speed: " + String(windSpeed));
+	Serial.println("Rain: " + String(rain));
+	Serial.println("Humidity: " + String(humidity));
 
-void lookforData(){
-    bool gotNewMessages = 0;
-    while(Serial1.available() && rxLen < UART_TX_BUF_SIZE) {
-            delay(10);
-            gotNewMessages = 1;
-            rxBuf[rxLen++] = Serial1.read();
-            // Serial.print(char(rxBuf[rxLen - 1]));
-    }
-    if (gotNewMessages == 1){
-        Serial.print("Information demandé: ");
-        for (uint8_t i = 0; i < (rxLen); i++){
-            Serial.print(char(rxBuf[i]));
-        }
-        Serial.println();
-        Serial.println("Fin de l'information...");
-    }
-    rxLen = 0;
+    Serial1.write(txBuf, txLen);
 }
-*/
